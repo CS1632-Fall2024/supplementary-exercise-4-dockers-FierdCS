@@ -1,3 +1,4 @@
+[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-718a45dd9cf7e7f842a935f5ebbe5719a5e09af4491e668f4dbf3b35d5cca122.svg)](https://classroom.github.com/online_ide?assignment_repo_id=13111585&assignment_repo_type=AssignmentRepo)
 - [CS 1632 - Software Quality Assurance](#cs-1632---software-quality-assurance)
   * [Description](#description)
   * [Part 2: Dockers](#part-2-dockers)
@@ -12,9 +13,9 @@
 - [Groupwork Plan](#groupwork-plan)
 
 # CS 1632 - Software Quality Assurance
-Summer Semester 2024 - Supplementary Exercise 4
+Fall Semester 2023 - Supplementary Exercise 4
 
-* DUE: November 22 (Friday), 2024 11:59 PM
+* DUE: December 1 (Friday), 2023 11:59 PM
 
 ## Description
 
@@ -124,8 +125,8 @@ The output from this command should end in these two lines:
 
 ```
 ...
-2024-07-25 18:33:15.380  INFO 21180 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
-2024-07-25 18:33:15.395  INFO 21180 --- [           main] c.s.ServingWebContentApplication         : Started ServingWebContentApplication in 2.46 seconds (JVM running for 2.852)
+2023-10-25 18:33:15.380  INFO 21180 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2023-10-25 18:33:15.395  INFO 21180 --- [           main] c.s.ServingWebContentApplication         : Started ServingWebContentApplication in 2.46 seconds (JVM running for 2.852)
 ```
 
 Note this starts the Tomcat web server listening on port 8080.  Try opening
@@ -168,10 +169,10 @@ Create a Dockerfile at the root of your repository with the following content:
 
 ```
 # specify base image
-FROM adoptopenjdk/openjdk11:slim
+FROM openjdk:8-jdk-alpine
 
 # install Maven on top of base image
-RUN apt-get update && apt-get install -y --no-install-recommends maven
+RUN apk update && apk add maven
 
 # define working directory
 WORKDIR /app
@@ -187,14 +188,15 @@ EXPOSE 8080
 CMD ["/bin/sh", "-c", "mvn spring-boot:run"]
 ```
 
-The description of the base image adoptopenjdk/openjdk11:ubi can be found here:
+The description of the base image openjdk:8-jdk-alpine can be found here:
+https://hub.docker.com/layers/library/openjdk/8-jdk-alpine/images/sha256-a3562aa0b991a80cfe8172847c8be6dbf6e46340b759c2b782f8b8be45342717?context=explore
 
-https://hub.docker.com/r/adoptopenjdk/openjdk11
+You can see that the image size is only 70 MB, and most of it is due to the
+OpenJDK 8 installation.  With the size of apps today, 70 MB is not a big
+price to pay for reliable testing and deployment.
 
 Base images of all imaginable OS versions and with all widely used packages
-can be found at Docker Hub:
-
-https://hub.docker.com/search
+can be found at Docker Hub (https://hub.docker.com/search).
 
 For our image, we add the Maven build system and copy over files required to
 launch our web app.  We also expose TCP port 8080 to the outside world since
@@ -204,11 +206,12 @@ created out of this image.  Lastly, we define the command that will be
 executed by default when the image is launched in a container, which is "mvn
 spring-boot:run".
 
-Now let's try creating a Docker container out of this image to test it.  By
-passing the "compose" argument to the docker tool, we can compose one or more
-Docker containers and network them together into a distributed system.  It is
-configured using another file in YAML format named docker-compose.yaml.  In our
-case, we just have one container so it is rather simple:
+Now let's try creating a Docker container out of this image to test it.
+There is a convenient tool for this called docker-compose.  The
+docker-compose tool knows how to compose one or more Docker containers and
+network them together into a distributed system.  It is configured using
+another file in YAML format named docker-compose.yaml.  In our case, we just
+have one container so it is rather simple:
 
 ```
 version: '3'
@@ -242,10 +245,10 @@ your web browser and confirming that the server is not found.
 
 Now let's first start Docker Desktop, which will start Docker Engine
 included in the application.  After it is running, invoke the
-"docker compose up" to bring up the container:
+docker-compose tool to bring up the container:
 
 ```
-docker compose up
+docker-compose up
 ```
 
 You should soon see the image registered on Docker Desktop:
@@ -265,7 +268,7 @@ appears when you hover over the container.  Or you can do on the
 commandline:
 
 ```
-docker compose down
+docker-compose down
 ```
 
 You may also go to the "Images" menu and delete the image if you wish to do
@@ -330,15 +333,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up JDK 11
+      - name: Set up JDK 8
         uses: actions/setup-java@v3
         with:
-          java-version: '11'
+          java-version: '8'
           distribution: 'temurin'
           cache: maven
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Install Chrome Web Browser
         run: sudo apt-get -y install google-chrome-stable
@@ -347,7 +350,7 @@ jobs:
         run: selenium/manager/linux/selenium-manager --browser chrome
 
       - name: Launch Web Service
-        run: docker compose up -d
+        run: docker-compose up -d
 
       - name: Run Selenium Tests
         run: cd selenium && mvn test
@@ -368,13 +371,12 @@ create a headless Chrome in the @Before setUp():
     driver = new ChromeDriver(options);
 ```
 
-Please do the same for ConnectTest.java, or you can choose to remove that test
-entirely since it is subsumed by D3Test.  Commit and push all these changes and
-the Docker CI workflow will trigger immediately.  Now, most likely, all the
-workflow will be successful.  For good measure, let's try running the workflow
-a few more times manually by triggering it using the "Run workflow" button.
-You will notice that every so often the workflow will fail.  If you peek inside
-a failing run, you will see something like this at the end of mvn test:
+Commit and push all these changes and the Docker CI workflow will trigger
+immediately.  Now, most likely, all the workflow will be successful.  For
+good measure, let's try running the workflow a few more times manually by
+triggering it using the "Run workflow" button.  You will notice that every
+so often the workflow will fail.  If you peek inside a failing run, you will
+see something like this at the end of mvn test:
 
 ```
 Results :
@@ -403,9 +405,9 @@ change every time the workflow is run.  What's happening?  There seems to be
 an issue with connecting or interacting with the web server, and it does not
 seem to be an issue with the web app itself.
 
-Let's go back to our docker-ci.yml file.  The step "docker compose up -d"
+Let's go back to our docker-ci.yml file.  The step "docker-compose up -d"
 includes an option "-d" that we didn't use before.  The "-d" option is short
-for "detached" and allows docker compose to execute detached from the
+for "detached" and allows docker-compose to execute detached from the
 terminal so that the commandline can immediately return and continue
 executing the next steps (you can try it yourself on a terminal if you wish
 to).  That means that by the time you get to the Selenium tests, the
@@ -491,7 +493,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       # Login against a Docker registry
       # https://github.com/docker/login-action
@@ -527,24 +529,24 @@ jobs:
 
 The workflow publishes the web server Docker image to ghcr.io (the GitHub
 Docker image registery).  The docker/build-push-action@v3 GitHub action does
-all the heavy lifting.
-
-Once this workflow is committed and pushed, trigger it by creating a new
-release on the "<> Code" tab.  Add a tag by clicking on the "Choose a tag" drop
-down, such as "v1.2" (since that is the version number in the pom.xml file).
-After the worflow completes, go to the "<> Code" tab and you should see a new
-package in the Packages section on the bottom right.  If you click on the
-package link, you should see something like the below:
+all the heavy lifting.  Once this workflow is pushed, trigger it manually
+using the "Run workflow" button.  After it completes, go to the "<> Code"
+tab and you should see a new package in the Packages section on the bottom
+right.  If you click on the package link, you should see something like the
+below:
 
 <img alt="Published Docker package" src=img/docker_publish.png>
 
 ### Pull published Docker image and launch from desktop
 
 Since your repository is private, you need to authenticate to your GitHub
-repository before pulling the package.  You can use the PAT (Personal
-Authentication Token) that you generated previously in Part 1 for this purpose.
-If have not yet generated the token, please refer to the [Deploy Maven package
-and use in your Maven project](#deploy-maven-package-and-use-in-your-maven-project) section in Part 1.
+repository before pulling the package.  You will use the PAT (Personal
+Authentication Token) that you generated previously for this purpose.  TO do
+so, you need to add permissions to access packages to the PAT.  On GitHub,
+go to Account > Settings > Developer Settings > Personal Access Tokens >
+Tokens (classic) to find your PAT and check write:packages (which should
+automatically check read:packages as well).  If you forgot the PAT string,
+click on "Regenerate Token" to obtain the string again.
 
 Now on the commandline do:
 
@@ -565,10 +567,11 @@ Next, copy the "Install from the command line" text from your GitHub package
 page, which was in my case:
 
 ```
-docker pull ghcr.io/cs1632-Fall2024/supplementary-exercise-4-ci-cd-dockers-wonsunahn:main
+docker pull ghcr.io/cs1632/supplementary-exercise-4-ci-cd-dockers-wonsunahn:main
 ```
 
-Then your commandline on the terminal.  This will pull the published image
+After replacing "supplementary-exercise-4-ci-cd-dockers-wonsunahn" with the name
+of your repository, run it on the terminal.  This will pull the published image
 on to your Docker Desktop.  If you check the "Images" menu, you will see a new
 image created:
 
@@ -581,9 +584,17 @@ your browser, it should work as expected.
 
 # Submission
 
-When you have done all the tasks you can, please submit "Supplementary Exercise
-4 Report" on GradeScope.  The report consists of "Yes" or "No" questions on
-whether you were able to complete a task and reflections.  If you were not able
-to complete a task, please mark "No".  For the tasks that you said "No", I
-expect you to explain the issue that prevented you from fulfilling the task on
-the reflection questions at the end of Part 1 and Part 2.
+I expect each of you to go through this exercise and then work on tasks that
+you were not able to complete together.  When you have done all the tasks
+you can, please submit "Supplementary Exercise 4 Report" on GradeScope.  The
+report consists of "Yes" or "No" questions on whether you were able to
+complete a task and reflections.  If either one of you in a group was not
+able to complete a task, please mark "No".
+
+# Groupwork Plan
+
+I expect each group member to experience CI/CD pipelines.  I created
+individual repositories for each of you, so please work on your own
+repositories to implement the pipelines.  After both of you are done,
+compare the YAML files that each of you wrote.  Discuss, resolve any
+differences, and submit the GitHub repository of your choice.
